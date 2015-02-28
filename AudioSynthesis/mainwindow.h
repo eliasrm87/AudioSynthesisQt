@@ -2,16 +2,23 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QAudioOutput>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <QFileDialog>
+#include <QGridLayout>
 #include <QDebug>
-#include <QPushButton>
-#include <QBuffer>
+#include <QSpinBox>
+#include <QLabel>
+#include <QDockWidget>
 #include <QtMath>
-#include <QFile>
-#include <QElapsedTimer>
-#include "audiosamplesbuffer.h"
-#include "playerworker.h"
-#include "mixerworker.h"
+
+#include <DataFlow/nodelinkline.h>
+#include <DataFlow/dataflowview.h>
+#include <AudioNodes/audionodes.h>
+#include <Audio/synthetizer.h>
+#include <AudioControls/audiocontrols.h>
+#include "synthetizerflowview.h"
 
 class MainWindow : public QMainWindow
 {
@@ -22,10 +29,54 @@ public:
     ~MainWindow();
 
 private slots:
-    void onPlay();
-protected:
-    void changeEvent(QEvent * event);
+    void onActFileOpen(bool checked);
+    void onActFileSave(bool checked);
+    void onActAddNode(bool checked);
+
+    void onTempoChange();
+    void onSignChange();
+
+    void onNodeAdded(Node* node);
+    void onNodeRemoved(QString nodeId);
+    void onLinkAdded(NodeLinkLine* nodeLink);
+    void onLinkRemoved(QString nodeId);
+    void onNodeSelected(Node* node);
+
 private:
+    QGridLayout* lytMain_;
+    QMenu* mnuFile_;
+    QAction* actFileOpen_;
+    QAction* actFileSave_;
+    QMenu* mnuNode_;
+    SynthetizerFlowView* dfv_;
+    QLabel* lblTempo_;
+    QSpinBox* spbTempo_;
+    QLabel* lblSignNum_;
+    QSpinBox* spbSignNum_;
+    QLabel* lblSignDen_;
+    QSpinBox* spbSignDen_;
+    QDockWidget* selNodeControls_;
+
+    Synthetizer* synthetizer_;
+    QHash<QString, Node*> nodes_;
+    QHash<QString, NodeLinkLine*> nodeLinks_;
+    QHash<QString, PartControls*> partsControls_;
+
+    void addNodeToMenu(QString nodeClass);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     qint16 getSample16(QByteArray &samples, qint64 i);
     QByteArray &getSamples16(QByteArray &samples, qint64 i, qint64 n);
     void sine16(QByteArray &array, quint64 samples, qreal frequency, qreal amplitude = 1, qreal sampleRate = 44100);
@@ -36,15 +87,6 @@ private:
     void fadeOut16(QByteArray &result, QByteArray &samples, qreal delay, qreal sampleRate = 44100);
 
     QByteArray organ16_6(quint64 samples, qreal frequency);
-
-    QAudioFormat format_;
-    PlayerWorker* player_;
-    QThread* playerThread_;
-    MixerWorker* mixer_;
-    QThread* mixerThread_;
-    AudioSamplesBuffer* buffer_;
-    QPushButton* btnPlay_;
-
 };
 
 #endif // MAINWINDOW_H

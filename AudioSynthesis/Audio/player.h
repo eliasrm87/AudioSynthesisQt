@@ -1,21 +1,18 @@
 #ifndef PLAYERTHREAD_H
 #define PLAYERTHREAD_H
 
-#include <QThread>
+#include <QObject>
 #include <QAudioOutput>
 #include "audiosamplesbuffer.h"
 #include <QDebug>
 
-class PlayerWorker : public QObject
+class Player : public QObject
 {
     Q_OBJECT
-
 public:
-    PlayerWorker(const QAudioFormat &format, AudioSamplesBuffer* buffer, QObject * parent = 0);
-    ~PlayerWorker();
-
-public slots:
-    void play();
+    Player(const QAudioFormat &format, AudioSamplesBuffer* buffer, QObject * parent = 0);
+    ~Player();
+    void start();
 
 private slots:
     void onStateChanged(QAudio::State state);

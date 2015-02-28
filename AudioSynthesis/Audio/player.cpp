@@ -1,18 +1,18 @@
-#include "playerworker.h"
+#include "player.h"
 
-PlayerWorker::PlayerWorker(const QAudioFormat &format, AudioSamplesBuffer *buffer, QObject *parent) :
+Player::Player(const QAudioFormat &format, AudioSamplesBuffer *buffer, QObject *parent) :
     QObject(parent), format_(format), buffer_(buffer)
 {
     audio_ = 0;
 }
 
-PlayerWorker::~PlayerWorker()
+Player::~Player()
 {
     if (audio_ != 0)
         audio_->stop();
 }
 
-void PlayerWorker::play()
+void Player::start()
 {
     audio_ = new QAudioOutput(format_, this);
     connect(audio_, SIGNAL(stateChanged(QAudio::State)),
@@ -21,9 +21,10 @@ void PlayerWorker::play()
     audio_->start(buffer_);
 }
 
-void PlayerWorker::onStateChanged(QAudio::State state)
+void Player::onStateChanged(QAudio::State state)
 {
     qDebug() << state << " " << audio_->error();
     if (audio_->error() != QAudio::NoError)
         audio_->start(buffer_);
 }
+

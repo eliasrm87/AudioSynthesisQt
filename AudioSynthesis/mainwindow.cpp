@@ -6,79 +6,190 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    //GUI
-    btnPlay_ = new QPushButton(tr("Play"), this);
-    this->setCentralWidget(btnPlay_);
-    connect(btnPlay_, SIGNAL(pressed()), this, SLOT(onPlay()));
+    setMinimumSize(1024, 768);
 
-    //AUDIO
-    format_.setSampleRate(44100);
-    format_.setChannelCount(2);
-    format_.setSampleSize(16);
-    format_.setCodec("audio/pcm");
-    format_.setByteOrder(QAudioFormat::LittleEndian);
-    format_.setSampleType(QAudioFormat::SignedInt);
+    setCentralWidget(new QWidget(this));
+    lytMain_ = new QGridLayout(centralWidget());
+    centralWidget()->setLayout(lytMain_);
 
-    QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-    if (!info.isFormatSupported(format_)) {
-        qWarning() << "Raw audio format not supported by backend, cannot play audio.";
-        return;
-    }
+    dfv_ = new SynthetizerFlowView(this);
+    dfv_->setContextMenuPolicy(Qt::ActionsContextMenu);
 
-    buffer_ = new AudioSamplesBuffer(44100, this);
-    buffer_->open(QIODevice::ReadWrite);
+    selNodeControls_ = new QDockWidget(tr("Node controls"), this);
+    this->addDockWidget(Qt::BottomDockWidgetArea, selNodeControls_);
 
-    player_ = new PlayerWorker(format_, buffer_);
-    playerThread_ = new QThread(this);
-    playerThread_->start();
-    while (!playerThread_->isRunning())
-        QThread::msleep(1);
-    player_->moveToThread(playerThread_);
+    lblTempo_ = new QLabel(tr("Tempo:"));
+    spbTempo_ = new QSpinBox(this);
+    spbTempo_->setMaximum(512);
+    spbTempo_->setValue(Source::getTempo());
+    lblSignNum_ = new QLabel(tr("Sign:"));
+    spbSignNum_ = new QSpinBox(this);
+    spbSignNum_->setMinimum(1);
+    spbSignNum_->setValue(Source::getSign().first);
+    lblSignDen_ = new QLabel(tr("/"));
+    spbSignDen_ = new QSpinBox(this);
+    spbSignDen_->setMinimum(1);
+    spbSignDen_->setValue(Source::getSign().second);
 
-    QMetaObject::invokeMethod(player_, "play");
+    dfv_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    mixer_ = new MixerWorker(buffer_);
-    mixerThread_ = new QThread(this);
-    mixerThread_->start();
-    while (!mixerThread_->isRunning())
-        QThread::msleep(1);
-    mixer_->moveToThread(mixerThread_);
+    lytMain_->addWidget(dfv_,        0, 0, 10, 16);
+    lytMain_->addWidget(lblTempo_,   15, 0, 1, 1);
+    lytMain_->addWidget(spbTempo_,   15, 1, 1, 1);
+    lytMain_->addWidget(lblSignNum_, 15, 2, 1, 1);
+    lytMain_->addWidget(spbSignNum_, 15, 3, 1, 1);
+    lytMain_->addWidget(lblSignDen_, 15, 4, 1, 1);
+    lytMain_->addWidget(spbSignDen_, 15, 5, 1, 1);
 
-    QMetaObject::invokeMethod(mixer_, "start");
+    mnuFile_ = new QMenu("File", this);
+    menuBar()->addMenu(mnuFile_);
+    actFileOpen_ = new QAction("Open", this);
+    mnuFile_->addAction(actFileOpen_);
+    actFileSave_ = new QAction("Save", this);
+    mnuFile_->addAction(actFileSave_);
+
+    mnuNode_ = new QMenu("Node", this);
+    menuBar()->addMenu(mnuNode_);
+
+    addNodeToMenu("Loop");
+    addNodeToMenu("Oscillator");
+    addNodeToMenu("Output");
+
+    connect(actFileOpen_, SIGNAL(triggered(bool)), this, SLOT(onActFileOpen(bool)));
+    connect(actFileSave_, SIGNAL(triggered(bool)), this, SLOT(onActFileSave(bool)));
+
+    synthetizer_ = new Synthetizer(this);
+    synthetizer_->start();
+
+    connect(dfv_,        SIGNAL(nodeAdded(Node*)),         this, SLOT(onNodeAdded(Node*)));
+    connect(dfv_,        SIGNAL(nodeRemoved(QString)),     this, SLOT(onNodeRemoved(QString)));
+    connect(dfv_,        SIGNAL(linkAdded(NodeLinkLine*)), this, SLOT(onLinkAdded(NodeLinkLine*)));
+    connect(dfv_,        SIGNAL(linkRemoved(QString)),     this, SLOT(onLinkRemoved(QString)));
+    connect(dfv_,        SIGNAL(nodeSelected(Node*)),      this, SLOT(onNodeSelected(Node*)));
+    connect(spbTempo_,   SIGNAL(valueChanged(int)),        this, SLOT(onTempoChange()));
+    connect(spbSignNum_, SIGNAL(valueChanged(int)),        this, SLOT(onSignChange()));
+    connect(spbSignDen_, SIGNAL(valueChanged(int)),        this, SLOT(onSignChange()));
 }
 
 MainWindow::~MainWindow()
 {
-    mixerThread_->quit();
-    while (mixerThread_->isRunning())
-        QThread::msleep(1);
-    delete mixer_;
-
-    playerThread_->quit();
-    while (playerThread_->isRunning())
-        QThread::msleep(1);
-    delete player_;
+    synthetizer_->quit();
 }
 
-void MainWindow::onPlay()
+void MainWindow::onActFileOpen(bool checked)
 {
-    Source* source1 = new Source("/home/elias/loop.raw", this);
-    Source* source2 = new Source("/home/elias/loop2.raw", this);
+    Q_UNUSED(checked);
 
-    mixer_->addSource(source1);
-    mixer_->addSource(source2);
+    QString filename = QFileDialog::getOpenFileName(this, tr("Open flow"), "", tr("Flow files (*.flow)"));
 
-    qDebug() << "Done";
+    if (!filename.isEmpty()) {
+        QFile file(filename);
+        file.open(QFile::ReadOnly);
+        dfv_->fromJson(QJsonDocument::fromJson(file.readAll()));
+        file.close();
+    }
 }
 
-void MainWindow::changeEvent(QEvent *event)
+void MainWindow::onActFileSave(bool checked)
 {
-    if (event->type() == QEvent::LanguageChange) {
+    Q_UNUSED(checked);
 
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save flow"), "", tr("Flow files (*.flow)"));
+
+    if (!filename.isEmpty()) {
+        if (!filename.endsWith(".flow")) {
+            filename += ".flow";
+        }
+        QFile file(filename);
+        file.open(QFile::Truncate | QFile::WriteOnly);
+        file.write(dfv_->toJson().toJson());
+        file.close();
     }
-    else {
-        QWidget::changeEvent(event);
-    }
+}
+
+void MainWindow::onActAddNode(bool checked)
+{
+    Q_UNUSED(checked);
+
+    QAction* sender = (QAction*)QObject::sender();
+
+    QPoint pos = dfv_->mousePosition();
+
+    QJsonObject nodeJsonObj;
+    nodeJsonObj.insert("class", sender->data().toString());
+    nodeJsonObj.insert("x", pos.x());
+    nodeJsonObj.insert("y", pos.y());
+
+    dfv_->addNode(dfv_->newNodeFromJson(nodeJsonObj));
+}
+
+void MainWindow::onTempoChange()
+{
+    Source::setTempo(spbTempo_->value());
+}
+
+void MainWindow::onSignChange()
+{
+    Source::setSign(QPair<quint8, quint8>(spbSignNum_->value(), spbSignDen_->value()));
+}
+
+void MainWindow::onNodeAdded(Node *node)
+{
+    nodes_.insert(node->objectName(), node);
+
+    SynPiece* piece = synthetizer_->addPiece(node->nodeClass(), node->params(), node->objectName());
+    if (piece == Q_NULLPTR)
+        return;
+
+    PartControls* controls = synthetizer_->getControls(piece->objectName());
+    if (controls)
+        partsControls_.insert(node->objectName(), controls);
+}
+
+void MainWindow::onNodeRemoved(QString nodeId)
+{
+    if (!nodes_.contains(nodeId))
+        return;
+
+    synthetizer_->removePiece(nodeId);
+
+    nodes_.remove(nodeId);
+}
+
+void MainWindow::onLinkAdded(NodeLinkLine *nodeLink)
+{
+    synthetizer_->connectPieces(nodeLink->fromNode()->objectName(),
+                                nodeLink->toNode()->objectName());
+    nodeLinks_.insert(nodeLink->objectName(), nodeLink);
+}
+
+void MainWindow::onLinkRemoved(QString nodeId)
+{
+    if (!nodeLinks_.contains(nodeId))
+        return;
+
+    NodeLinkLine *nodeLink = nodeLinks_[nodeId];
+    synthetizer_->disconnectPieces(nodeLink->fromNode()->objectName(),
+                                nodeLink->toNode()->objectName());
+    nodeLinks_.remove(nodeId);
+}
+
+void MainWindow::onNodeSelected(Node *node)
+{
+    if (!partsControls_.contains(node->objectName()))
+        return;
+
+    selNodeControls_->setWidget(partsControls_[node->objectName()]);
+}
+
+void MainWindow::addNodeToMenu(QString nodeClass)
+{
+    QAction* act = new QAction(nodeClass, this);
+    act->setData(nodeClass);
+    connect(act, SIGNAL(triggered(bool)), this, SLOT(onActAddNode(bool)));
+
+    mnuNode_->addAction(act);
+    dfv_->addAction(act);
 }
 
 qint16 MainWindow::getSample16(QByteArray &samples, qint64 i)

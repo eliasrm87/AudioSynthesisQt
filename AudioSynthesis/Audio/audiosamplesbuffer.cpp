@@ -1,12 +1,12 @@
 #include "audiosamplesbuffer.h"
 
-AudioSamplesBuffer::AudioSamplesBuffer(quint16 sampleRate, QObject *parent) :
-    QIODevice(parent), sampleRate_(sampleRate)
+AudioSamplesBuffer::AudioSamplesBuffer(quint16 sampleRate, quint8 seconds, QObject *parent) :
+    QIODevice(parent), sampleRate_(sampleRate), seconds_(seconds)
 {
     bufferR_ = 0;
     bufferW_ = 0;
 
-    setBufferSize(sampleRate_ * 2 * 2); //1 sec
+    setBufferSize(sampleRate_ * 2 * seconds_);
 
     usedBytesR_ = 0;
     usedBytesW_ = 0;
@@ -75,6 +75,16 @@ qint64 AudioSamplesBuffer::writeData(const char *data, qint64 maxSize)
     return maxSize;
 }
 
+quint16 AudioSamplesBuffer::sampleRate() const
+{
+    return sampleRate_;
+}
+
+quint8 AudioSamplesBuffer::seconds() const
+{
+    return seconds_;
+}
+
 void AudioSamplesBuffer::swap()
 {
     QMutexLocker locker(&mutex_);
@@ -87,6 +97,19 @@ void AudioSamplesBuffer::swap()
     usedBytesR_ = usedBytesW_;
     posW_       = 0;
     usedBytesW_ = 0;
+}
+
+qint64 AudioSamplesBuffer::write16(const QVector<float> &floatArray)
+{
+    tmpArray_.clear();
+    qint16 value16;
+    foreach (float value, floatArray) {
+        value16 = INT16_MAX * value;
+        tmpArray_.push_back(value16);
+        tmpArray_.push_back(value16 >> 8);
+    }
+
+    return write(tmpArray_) / 2;
 }
 
 quint32 AudioSamplesBuffer::bufferSize() const
