@@ -3,7 +3,7 @@
 #include <QtMath>
 
 MixerWorker::MixerWorker(AudioSamplesBuffer *buffer, bool master, QObject *parent) :
-    QThread(parent), buffer_(buffer), isMaster_(master)
+    QThread(parent), isMaster_(master), buffer_(buffer)
 {
     mtxExit_.lock();
 }
@@ -45,7 +45,7 @@ void MixerWorker::run()
         nSources = sources_.size();
         if (nSources > 0) {
             if (isMaster_)
-                Source::incSamplesClock(w);
+                emit clockUpdated(Source::incSamplesClock(w));
             for (int i = 0; i < nSources; ++i) {
                 sources_[i]->getSamples(tmpArray, nSamples);
                 mix16(result, tmpArray);

@@ -19,6 +19,9 @@ public:
 public slots:
     void quit();
 
+signals:
+    void clockUpdated(const quint64 tick);
+
 protected:
     void run();
     inline float getSample16(const SamplesVector &samples, qint64 i);

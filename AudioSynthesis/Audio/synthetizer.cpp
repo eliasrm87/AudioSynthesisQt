@@ -8,10 +8,10 @@ Synthetizer::Synthetizer(QObject *parent) :
 
 Synthetizer::~Synthetizer()
 {
-    mixer_->quit();
-    while (mixer_->isRunning())
+    masterMixer_->quit();
+    while (masterMixer_->isRunning())
         QThread::msleep(1);
-    mixer_->deleteLater();
+    masterMixer_->deleteLater();
     player_->deleteLater();
     buffer_->deleteLater();
 }
@@ -90,7 +90,7 @@ void Synthetizer::connectPieces(QString from, QString to) {
 
     if (pieces_[from]->pieceType() == "Source") {
         Source *source = static_cast<Source*>(pieces_[from]);
-        mixer_->addSource(source);
+        masterMixer_->addSource(source);
         qDebug() << source->pieceClass() << "to output";
     }
 }
@@ -105,7 +105,7 @@ void Synthetizer::disconnectPieces(QString from, QString to)
 
     if (pieces_[from]->pieceType() == "Source") {
         Source *source = static_cast<Source*>(pieces_[from]);
-        mixer_->removeSource(source);
+        masterMixer_->removeSource(source);
     }
 }
 
@@ -131,8 +131,8 @@ void Synthetizer::run()
     player_ = new Player(format_, buffer_);
     player_->start();
 
-    mixer_ = new MixerWorker(buffer_, true);
-    mixer_->start();
+    masterMixer_ = new MixerWorker(buffer_, true);
+    masterMixer_->start();
 
     exec();
 }

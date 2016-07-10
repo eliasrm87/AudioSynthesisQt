@@ -37,7 +37,7 @@ private:
 
 //STATIC CLASS
 public:
-    static void incSamplesClock(quint64 size);
+    static quint64 incSamplesClock(quint64 size);
     static quint16 getTempo();
     static void setTempo(const quint16 &tempo);
     static QPair<quint8, quint8> getSign();

@@ -37,7 +37,7 @@ protected:
 private:
     QAudioFormat format_;
     Player* player_;
-    MixerWorker* mixer_;
+    MixerWorker* masterMixer_;
     AudioSamplesBuffer* buffer_;
     QHash<QString, SynPiece*> pieces_;
     QList<QString> outputs_;

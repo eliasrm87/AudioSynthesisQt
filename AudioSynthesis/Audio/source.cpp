@@ -89,9 +89,10 @@ const SamplesVector &Source::getSamples()
     return samplesBuffer_;
 }
 
-void Source::incSamplesClock(quint64 size)
+quint64 Source::incSamplesClock(quint64 size)
 {
     samplesClock_ += size;
+    return samplesClock_;
 }
 
 quint16 Source::getTempo()
