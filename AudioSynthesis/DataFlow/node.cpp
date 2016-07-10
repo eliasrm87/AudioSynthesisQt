@@ -21,7 +21,11 @@ Node::Node(QString nodeClass, QPoint position, quint8 inputs, quint8 outputs, QG
 Node::Node(const QJsonObject &obj, quint8 inputs, quint8 outputs, QGraphicsItem *parent) :
     QGraphicsItem(parent), inputs_(inputs), outputs_(outputs)
 {
-    setObjectName(obj.value("uuid").toString());
+    QString uuid = obj.value("uuid").toString();
+    if (uuid.isEmpty()) {
+        uuid = QUuid::createUuid().toString();
+    }
+    setObjectName(uuid);
     setData(1, obj.value("class").toString());
     setPos(QPointF(obj.value("x").toInt(), obj.value("y").toInt()));
     params_ = obj.value("parameters").toObject();
