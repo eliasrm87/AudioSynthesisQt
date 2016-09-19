@@ -41,7 +41,7 @@ public:
     static quint64 incSamplesClock(quint64 size);
     static quint16 getTempo();
     static void setTempo(const quint16 &tempo);
-    static QPair<quint8, quint8> getSign();
+    static Sign getSign();
     static void setSign(QPair<quint8, quint8> sign);
     static quint16 getSampleRate();
     static void setSampleRate(const quint16 &sampleRate);
