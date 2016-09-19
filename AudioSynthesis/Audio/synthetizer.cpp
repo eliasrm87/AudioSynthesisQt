@@ -74,8 +74,12 @@ int Synthetizer::removePiece(QString Uuid)
         }
     }
 
-    pieces_[Uuid]->deleteLater();
+    if (controls_.contains(Uuid)) {
+        controls_[Uuid]->deleteLater();
+        controls_.remove(Uuid);
+    }
 
+    pieces_[Uuid]->deleteLater();
     return pieces_.remove(Uuid);
 }
 
