@@ -9,6 +9,7 @@
 #include "synpiece.h"
 
 typedef QVector<float> SamplesVector;
+typedef QPair<quint8, quint8> Sign;
 
 class Source : public SynPiece
 {
@@ -50,7 +51,7 @@ protected:
     static quint16 sampleRate_;
     static quint64 samplesClock_;
     static quint16 tempo_;
-    static QPair<quint8, quint8> sign_;
+    static Sign sign_;
     static quint32 blackLength_;
     static quint32 beatLength_;
     static quint32 signLength_;

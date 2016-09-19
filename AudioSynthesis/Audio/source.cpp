@@ -2,13 +2,13 @@
 #include <QDebug>
 
 QMutex* Source::staticVarsMtx_ = new QMutex();
-quint16 Source::sampleRate_ = 44100;
-quint64 Source::samplesClock_ = 0;
-quint16 Source::tempo_ = 120;
-QPair<quint8, quint8> Source::sign_ = QPair<quint8, quint8>(4,4);
-quint32 Source::blackLength_ = 22050;
-quint32 Source::beatLength_ = 22050;
-quint32 Source::signLength_ = 88200;
+quint16 Source::sampleRate_    = 44100;
+quint64 Source::samplesClock_  = 0;
+quint16 Source::tempo_         = 120;
+Sign    Source::sign_          = Sign(4,4);
+quint32 Source::blackLength_   = 22050;
+quint32 Source::beatLength_    = 22050;
+quint32 Source::signLength_    = 88200;
 
 Source::Source(const QString &sourceClass, QJsonObject *params, QObject *parent) :
     SynPiece("Source", sourceClass, params, parent)
@@ -108,7 +108,7 @@ void Source::setTempo(const quint16 &tempo)
     updateVariables();
 }
 
-QPair<quint8, quint8> Source::getSign()
+Sign Source::getSign()
 {
     return sign_;
 }
