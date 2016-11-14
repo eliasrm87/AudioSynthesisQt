@@ -15,6 +15,7 @@ class NodeTerminal;
 class Node : public QObject, public QGraphicsItem
 {
     Q_OBJECT
+    Q_INTERFACES(QGraphicsItem)
 public:
     Node(QString nodeClass = "Node", QPoint position = QPoint(0, 0), quint8 inputs = 0, quint8 outputs = 0, QGraphicsItem * parent = 0);
     Node(const QJsonObject &obj, quint8 inputs, quint8 outputs, QGraphicsItem *parent = 0);
