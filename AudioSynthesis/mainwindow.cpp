@@ -137,13 +137,42 @@ void MainWindow::onNodeAdded(Node *node)
 {
     nodes_.insert(node->objectName(), node);
 
-    SynPiece* piece = synthetizer_->addPiece(node->nodeClass(), node->params(), node->objectName());
-    if (piece == Q_NULLPTR)
-        return;
+    PartControls* controls = Q_NULLPTR;
+    SynPiece* piece;
 
-    PartControls* controls = synthetizer_->getControls(piece->objectName());
+    QString pieceClass  = node->nodeClass();
+    QJsonObject* params = node->params();
+    QString Uuid        = node->objectName();
+
+    if (pieceClass == "Oscillator") {
+        piece = new Oscillator(params);
+        qDebug() << "Added oscillator";
+    } else if (pieceClass == "Loop") {
+        Loop* loop = new Loop(params);
+        //Controls
+        LoopControls* loopControls = new LoopControls();
+        loopControls->setPath(loop->path());
+        loopControls->setWaveForm(loop->getSamples());
+        connect(loop,         SIGNAL(samplesUpdated(QVector<float>)), loopControls, SLOT(setWaveForm(QVector<float>)));
+        connect(loopControls, SIGNAL(pathChanged(QString)),           loop,         SLOT(setPath(QString)));
+        //Vars
+        piece = loop;
+        controls = loopControls;
+        qDebug() << "Added loop source";
+    } else if (pieceClass == "Output") {
+        piece = new Output(params);
+        qDebug() << "Added output";
+    } else {
+        qDebug() << "Unknown piece class";
+        return;
+    }
+
+    piece->setObjectName(Uuid);
+
+    synthetizer_->addPiece(piece);
+
     if (controls)
-        partsControls_.insert(node->objectName(), controls);
+        partsControls_.insert(Uuid, controls);
 }
 
 void MainWindow::onNodeRemoved(QString nodeId)

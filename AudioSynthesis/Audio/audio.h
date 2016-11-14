@@ -6,5 +6,6 @@
 #include "audiosamplesbuffer.h"
 #include "loop.h"
 #include "oscillator.h"
+#include "output.h"
 
 #endif // AUDIO_H

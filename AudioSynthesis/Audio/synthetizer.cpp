@@ -16,43 +16,16 @@ Synthetizer::~Synthetizer()
     buffer_->deleteLater();
 }
 
-SynPiece *Synthetizer::addPiece(QString pieceClass, QJsonObject *params, QString Uuid)
+void Synthetizer::addPiece(SynPiece* piece)
 {
-    SynPiece* piece = Q_NULLPTR;
-    PartControls* controls = Q_NULLPTR;
+    if (pieces_.contains(piece->objectName()))
+        return;
 
-    if (pieces_.contains(Uuid))
-        return pieces_[Uuid];
+    pieces_.insert(piece->objectName(), piece);
 
-    if (pieceClass == "Oscillator") {
-        piece = new Oscillator(params);
-        qDebug() << "Added oscillator";
-    } else if (pieceClass == "Loop") {
-        Loop* loop = new Loop(params);
-        //Controls
-        LoopControls* loopControls = new LoopControls();
-        loopControls->setPath(loop->path());
-        loopControls->setWaveForm(loop->getSamples());
-        connect(loop,         SIGNAL(samplesUpdated(QVector<float>)), loopControls, SLOT(setWaveForm(QVector<float>)));
-        connect(loopControls, SIGNAL(pathChanged(QString)),           loop,         SLOT(setPath(QString)));
-        //Vars
-        piece = loop;
-        controls = loopControls;
-        qDebug() << "Added loop source";
-    } else if (pieceClass == "Output") {
-        outputs_.push_back(Uuid);
-        qDebug() << "Added output";
-        return piece;
-    } else {
-        return piece;
+    if (piece->pieceClass() == "Output") {
+        outputs_.push_back(piece->objectName());
     }
-
-    pieces_.insert(Uuid, piece);
-    piece->setObjectName(Uuid);
-
-    controls_.insert(Uuid, controls);
-
-    return piece;
 }
 
 SynPiece *Synthetizer::getPiece(QString Uuid)
@@ -74,10 +47,10 @@ int Synthetizer::removePiece(QString Uuid)
         }
     }
 
-    if (controls_.contains(Uuid)) {
-        controls_[Uuid]->deleteLater();
-        controls_.remove(Uuid);
-    }
+//    if (controls_.contains(Uuid)) {
+//        controls_[Uuid]->deleteLater();
+//        controls_.remove(Uuid);
+//    }
 
     pieces_[Uuid]->deleteLater();
     return pieces_.remove(Uuid);
@@ -139,12 +112,4 @@ void Synthetizer::run()
     masterMixer_->start();
 
     exec();
-}
-
-PartControls *Synthetizer::getControls(QString Uuid) const
-{
-    if (!controls_.contains(Uuid))
-        return Q_NULLPTR;
-
-    return controls_[Uuid];
 }
