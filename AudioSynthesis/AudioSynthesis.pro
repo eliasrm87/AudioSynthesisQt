@@ -34,7 +34,9 @@ SOURCES += main.cpp\
     synthetizerflowview.cpp \
     Audio/synpiece.cpp \
     AudioControls/loopcontrols.cpp \
-    AudioControls/partcontrols.cpp
+    AudioControls/partcontrols.cpp \
+    Audio/output.cpp \
+    Audio/sink.cpp
 
 HEADERS  += mainwindow.h \
     DataFlow/linkline.h \
@@ -59,6 +61,8 @@ HEADERS  += mainwindow.h \
     Audio/synpiece.h \
     AudioControls/loopcontrols.h \
     AudioControls/partcontrols.h \
-    AudioControls/audiocontrols.h
+    AudioControls/audiocontrols.h \
+    Audio/output.h \
+    Audio/sink.h
 
 RESOURCES +=
